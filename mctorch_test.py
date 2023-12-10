@@ -6,22 +6,31 @@ import numpy as np
 import numpy.random as npr
 # from scipy.optimize import linear_sum_assignment
 from munkres import Munkres
+import matplotlib.pyplot as plt
+import networkx as nx
+from networkx.algorithms import bipartite
 
-n = 20
-nIter = 20
+n = 10
+nIter = 300
 
 # # cost matrix
-costsNumpy = np.abs(npr.randn(n,n) * 100)
+costsNumpy = np.abs(npr.randn(n,n) * 1e2)
 # print(f'costs: {costsNumpy}')
 costs = t.from_numpy(costsNumpy).to(t.float32)
 # print(f'c: {c.dim()}')
 
-# reference assignment with munkres
-assignments = Munkres().compute(costsNumpy)
+B = nx.Graph()
+# B.add_nodes_from([1, 2, 3, 4], bipartite=0)
+# B.add_nodes_from(["a", "b", "c"], bipartite=1)
+# B.add_edges_from([(1, "a"), (1, "b"), (2, "b"), (2, "c"), (3, "c"), (4, "a")])
+
+
+# # reference assignment with munkres
+assignments = Munkres().compute(costsNumpy.copy())  # NB use copy() since Munkres mutates input vector
 totalCost = 0
 for r, c in assignments:
     value = costsNumpy[r, c] # costsNumpy[row][column]
-    print(f'row {r}, col {c}: {value}')
+    # print(f'row {r}, col {c}: {value}')
     totalCost += value
 print(f'Munkres: total cost = {totalCost}')
 
@@ -35,7 +44,7 @@ def cost(xi:t.Tensor):
     :param xi: doubly stochastic matrix. Close to optimality it should act as a permutation mtx
     :return:
     """
-    return t.trace(t.einsum('ijk,jl->kl', xi, costs))
+    return t.trace(t.einsum('ijk,jl->kl', xi, costs))  # Tr(X_i C)
 
 # 3. Optimize
 optimizer = rSGD(params = [x], lr=1e-2)
@@ -49,3 +58,8 @@ for epoch in range(nIter):
     optimizer.step()
     optimizer.zero_grad()
 print(f'Cost #{epoch}: {fi.data}')
+print(f'Final X: {x.data}')
+
+fig, ax = plt.subplots()
+ax.plot(list(range(nIter)), cs, linewidth=2.0)
+plt.show()
