@@ -5,14 +5,25 @@ from mctorch.optim import rSGD
 import numpy as np
 import numpy.random as npr
 # from scipy.optimize import linear_sum_assignment
+from munkres import Munkres
 
 n = 20
-nIter = 50
+nIter = 20
 
 # # cost matrix
-cNumpy = np.abs(npr.randn(n,n))
-c = t.from_numpy(cNumpy).to(t.float32)
+costsNumpy = np.abs(npr.randn(n,n) * 100)
+# print(f'costs: {costsNumpy}')
+costs = t.from_numpy(costsNumpy).to(t.float32)
 # print(f'c: {c.dim()}')
+
+# reference assignment with munkres
+assignments = Munkres().compute(costsNumpy)
+totalCost = 0
+for r, c in assignments:
+    value = costsNumpy[r, c] # costsNumpy[row][column]
+    print(f'row {r}, col {c}: {value}')
+    totalCost += value
+print(f'Munkres: total cost = {totalCost}')
 
 # 1. Initialize Parameter
 x = Parameter(manifold=DoublyStochastic(n,n))
@@ -24,7 +35,7 @@ def cost(xi:t.Tensor):
     :param xi: doubly stochastic matrix. Close to optimality it should act as a permutation mtx
     :return:
     """
-    return t.trace(t.einsum('ijk,jl->kl', xi, c))
+    return t.trace(t.einsum('ijk,jl->kl', xi, costs))
 
 # 3. Optimize
 optimizer = rSGD(params = [x], lr=1e-2)
