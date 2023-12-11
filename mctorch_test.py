@@ -57,8 +57,10 @@ def distanceToOptAssign(xi:t.Tensor):
     dx = xi - xRef
     return t.linalg.norm(dx, dim=(0, 1))
 
-def rowColMean(xi:t.Tensor):
-    return t.mean(xi, dim = (0, 1))
+def rowColMeans(xi:t.Tensor):
+    rs = t.sum(xi, dim=1)
+    cs = t.sum(xi, dim=0)
+    return t.mean(rs), t.mean(cs)
 
 # print(f'cost of Munkres assignment: {cost(adj0.tensor)}, {adj0.tensor}')
 
@@ -81,7 +83,7 @@ for epoch in range(nIter):
     y = fi.detach().clone().data.item()  # cost
     cs.append(y)
     xCurr = x.detach().clone().data[0,:,:]  # current iteration
-    xrcMean = rowColMean(xCurr)  # row and column mean
+    rmean, cmean = rowColMeans(xCurr)  # row and column mean
     di = distanceToOptAssign(xCurr)  # distance to optimal soln
     ds.append(di)
     # print(f'Cost: {fi}')
@@ -93,7 +95,7 @@ for epoch in range(nIter):
     nxAdjGraph = adj.g
     # # drawing
     plt.clf()
-    plt.title(f'# {epoch}: cost {y:.2f}, dist to optimal {di:.2f}, (mean {xrcMean:.2f})')
+    plt.title(f'# {epoch}: cost {y:.2f}, dist to optimal {di:.2f}, (row m {rmean:.2f}, col m {cmean:.2f})')
     # nx.draw(nxAdjGraph, pos=adjPos)
     ws = nx.get_edge_attributes(nxAdjGraph, 'weight')
     wsScaled = [scaleEdgeWidth(w) for w in list(ws.values())]
