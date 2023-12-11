@@ -1,7 +1,7 @@
 import torch as t
 from mctorch.manifolds import DoublyStochastic
 from mctorch.parameter import Parameter
-from mctorch.optim import rSGD
+from mctorch.optim import rSGD, rAdagrad
 import numpy as np
 import numpy.random as npr
 # from scipy.optimize import linear_sum_assignment
@@ -12,7 +12,7 @@ import networkx as nx
 # from networkx.algorithms import bipartite
 from adjacency import BipartiteAdjacency
 
-n = 10
+n = 5
 nIter = 300
 
 # # cost matrix
@@ -42,22 +42,30 @@ x = Parameter(manifold=DoublyStochastic(n,n))
 
 # # 2. declare cost function
 def cost(xi:t.Tensor):
-    """
+    """ Tr(X_i C)
     :param xi: doubly stochastic matrix. Close to optimality it should act as a permutation mtx
     :return: cost :: R+
     """
     if xi.dim() == 3:
-        return t.trace(t.einsum('ijk,jl->kl', xi, costs))  # Tr(X_i C)
+        return t.trace(t.einsum('ijk,jl->kl', xi, costs))  # ignore first dimension since we only use batch size == 1
     else:
-        return t.trace(t.einsum('jk,jl->kl', xi, costs))  # Tr(X_i C)
+        return t.trace(t.einsum('jk,jl->kl', xi, costs))
+
+def distanceToOptAssign(xi:t.Tensor):
+    """distance to the known-optimal (Munkres) assignment"""
+    xRef = adj0.tensor
+    dx = xi - xRef
+    return t.linalg.norm(dx, dim=(0, 1))
+
 
 # print(f'cost of Munkres assignment: {cost(adj0.tensor)}, {adj0.tensor}')
 
 # 3. Optimize
-optimizer = rSGD(params = [x], lr=1e-2)
+# optimizer = rSGD(params = [x], lr=1e-2)
+optimizer = rAdagrad(params = [x])
 
 adj = BipartiteAdjacency(n, n, weighted=True)
-# adjPos = nx.spring_layout(adj.g)  # graph layout
+# # graph layout
 adjPos = nx.bipartite_layout(adj.g, nx.bipartite.sets(adj.g)[0], align='vertical')
 
 def scaleEdgeWidth(w):
@@ -65,9 +73,12 @@ def scaleEdgeWidth(w):
 
 # fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
 cs = []  # costs
+ds = []
 for epoch in range(nIter):
     fi = cost(x)
     cs.append(fi.data.item())
+    di = distanceToOptAssign(x.detach().clone().data[0,:,:])
+    ds.append(di)
     # print(f'Cost: {fi}')
     fi.backward()
     optimizer.step()
@@ -100,8 +111,9 @@ for epoch in range(nIter):
 
 
 print(f'Cost #{epoch}: {fi.data}')
+print(f'Distance to optimality #{epoch}: {di}')
 # print(f'Final X: {x.data}')
 
 fig, ax = plt.subplots()
-ax.plot(list(range(nIter)), cs, linewidth=2.0)
+ax.plot(list(range(nIter)), ds, linewidth=2.0)
 plt.show()
