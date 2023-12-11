@@ -82,12 +82,20 @@ for epoch in range(nIter):
     ws = nx.get_edge_attributes(nxAdjGraph, 'weight')
     wsScaled = [scaleEdgeWidth(w) for w in list(ws.values())]
     # print(f'edge weights: {wsScaled}')
+
+    # # # draw reference (Munkres) solution
+    # nx.draw_networkx_edges(nxAdjGraph, pos=adjPos,
+    #                        edgelist=nx.get_edge_attributes(adj0.g, 'weight').keys(),
+    #                        edge_color='k',
+    #                        width=0.5)
+
     nx.draw_networkx_edges(nxAdjGraph, pos=adjPos,
                            edgelist=ws.keys(),
-                           width=wsScaled, # [scaleEdgeWidth(w) for w in list(ws.values())],
+                           width=wsScaled,
                            edge_color='blue',
                            alpha=0.6
                            )
+
     plt.pause(0.01)
 
 
