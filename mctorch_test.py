@@ -57,12 +57,14 @@ def distanceToOptAssign(xi:t.Tensor):
     dx = xi - xRef
     return t.linalg.norm(dx, dim=(0, 1))
 
+def rowColMean(xi:t.Tensor):
+    return t.mean(xi, dim = (0, 1))
 
 # print(f'cost of Munkres assignment: {cost(adj0.tensor)}, {adj0.tensor}')
 
 # 3. Optimize
-# optimizer = rSGD(params = [x], lr=1e-2)
-optimizer = rAdagrad(params = [x])
+optimizer = rSGD(params = [x], lr=1e-2)
+# optimizer = rAdagrad(params = [x])
 
 adj = BipartiteAdjacency(n, n, weighted=True)
 # # graph layout
@@ -76,19 +78,22 @@ cs = []  # costs
 ds = []
 for epoch in range(nIter):
     fi = cost(x)
-    cs.append(fi.data.item())
-    di = distanceToOptAssign(x.detach().clone().data[0,:,:])
+    y = fi.detach().clone().data.item()  # cost
+    cs.append(y)
+    xCurr = x.detach().clone().data[0,:,:]  # current iteration
+    xrcMean = rowColMean(xCurr)  # row and column mean
+    di = distanceToOptAssign(xCurr)  # distance to optimal soln
     ds.append(di)
     # print(f'Cost: {fi}')
     fi.backward()
     optimizer.step()
     optimizer.zero_grad()
     # adjacency
-    adj.fromTorch(x.detach().clone().data[0,:,:], kLargest=2)
+    adj.fromTorch(xCurr, kLargest=2)
     nxAdjGraph = adj.g
     # # drawing
     plt.clf()
-    plt.title(f'Iter {epoch}')
+    plt.title(f'# {epoch}: cost {y:.2f}, dist to optimal {di:.2f}, (mean {xrcMean:.2f})')
     # nx.draw(nxAdjGraph, pos=adjPos)
     ws = nx.get_edge_attributes(nxAdjGraph, 'weight')
     wsScaled = [scaleEdgeWidth(w) for w in list(ws.values())]
