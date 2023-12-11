@@ -7,5 +7,6 @@ If it works I'll write a blog post about it
 
 
 ### References
-<a href="#assign">https://en.wikipedia.org/wiki/Assignment_problem </a>
-<a href="#birkhoff">https://en.wikipedia.org/wiki/Doubly_stochastic_matrix </a>
+
+* <a href="#assign">https://en.wikipedia.org/wiki/Assignment_problem </a>
+* <a href="#birkhoff">https://en.wikipedia.org/wiki/Doubly_stochastic_matrix </a>
