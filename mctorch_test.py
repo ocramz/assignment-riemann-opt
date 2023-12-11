@@ -13,19 +13,13 @@ import networkx as nx
 from adjacency import BipartiteAdjacency
 
 n = 10
-nIter = 100
+nIter = 300
 
 # # cost matrix
 costsNumpy = np.abs(npr.randn(n,n) * 1e2)
 # print(f'costs: {costsNumpy}')
 costs = t.from_numpy(costsNumpy).to(t.float32)
 # print(f'c: {c.dim()}')
-
-B = nx.Graph()
-# B.add_nodes_from([1, 2, 3, 4], bipartite=0)
-# B.add_nodes_from(["a", "b", "c"], bipartite=1)
-# B.add_edges_from([(1, "a"), (1, "b"), (2, "b"), (2, "c"), (3, "c"), (4, "a")])
-
 
 # # reference assignment with munkres
 assignments = Munkres().compute(costsNumpy.copy())  # NB use copy() since Munkres mutates input vector
@@ -37,7 +31,7 @@ for r, c in assignments:
     # print(f'row {r}, col {c}: {value}')
     totalCost += value
 print(f'Munkres: total cost = {totalCost}')
-adj0 = BipartiteAdjacency(n, n)
+adj0 = BipartiteAdjacency(n, n, weighted=False)
 adj0.fromEdges(aEdges)
 # print(f'adj0 : {type(adj0)}')
 
@@ -62,10 +56,14 @@ def cost(xi:t.Tensor):
 # 3. Optimize
 optimizer = rSGD(params = [x], lr=1e-2)
 
-adj = BipartiteAdjacency(n, n)
-adjPos = nx.spring_layout(adj.g)  # graph layout
+adj = BipartiteAdjacency(n, n, weighted=True)
+# adjPos = nx.spring_layout(adj.g)  # graph layout
+adjPos = nx.bipartite_layout(adj.g, nx.bipartite.sets(adj.g)[0], align='vertical')
 
-fig, ax = plt.subplots()
+def scaleEdgeWidth(w):
+    return - np.log(w) / 5
+
+# fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
 cs = []  # costs
 for epoch in range(nIter):
     fi = cost(x)
@@ -75,18 +73,27 @@ for epoch in range(nIter):
     optimizer.step()
     optimizer.zero_grad()
     # adjacency
-    adj.fromTorch(x.detach().clone().data[0,:,:], kLargest=1)
+    adj.fromTorch(x.detach().clone().data[0,:,:], kLargest=2)
     nxAdjGraph = adj.g
     # # drawing
-    # plt.clf()
-    # plt.title(f'Iter {epoch}')
+    plt.clf()
+    plt.title(f'Iter {epoch}')
     # nx.draw(nxAdjGraph, pos=adjPos)
-    # # plt.pause(1)
-    # plt.show()
+    ws = nx.get_edge_attributes(nxAdjGraph, 'weight')
+    wsScaled = [scaleEdgeWidth(w) for w in list(ws.values())]
+    # print(f'edge weights: {wsScaled}')
+    nx.draw_networkx_edges(nxAdjGraph, pos=adjPos,
+                           edgelist=ws.keys(),
+                           width=wsScaled, # [scaleEdgeWidth(w) for w in list(ws.values())],
+                           edge_color='blue',
+                           alpha=0.6
+                           )
+    plt.pause(0.01)
+
 
 print(f'Cost #{epoch}: {fi.data}')
 # print(f'Final X: {x.data}')
 
-# fig, ax = plt.subplots()
+fig, ax = plt.subplots()
 ax.plot(list(range(nIter)), cs, linewidth=2.0)
 plt.show()
