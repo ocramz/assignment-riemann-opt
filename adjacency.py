@@ -14,11 +14,23 @@ from networkx.algorithms import bipartite
 def argSort(xs):
     return sorted(list(enumerate(xs)), key=lambda x:x[1])
 
-class Adjacency:
-    def __init__(self, weighted=False):
+class BipartiteAdjacency:
+    def __init__(self, m:int, n:int, weighted=False):
+        """
+        initialize a bipartite graph
+        :param n:
+        :param weighted:
+        """
         self.g = nx.Graph()
         self.tensor = t.Tensor()
         self.weighted = weighted
+        self.m = m  # size of left set
+        self.n = n  # " right set
+        for i in range(m):
+            self.g.add_node(i, bipartite=0)  # add to left set
+            for j in range(m+n, m*n):  # node indices must be unique
+                self.g.add_node(j, bipartite=1)
+                self.g.add_edge(i, j)
     def __str__(self):
         return f'Adjacency'
     def fromTorch(self, tt: t.Tensor, kLargest:int = 3):
@@ -30,12 +42,12 @@ class Adjacency:
                     self.g.add_edge(i, j, cost=c)
                 else:
                     self.g.add_edge(i, j)
-    def fromEdges(self, ixs, m:int, n:int):
+    def fromEdges(self, ixs):
         """
         :param ixs: iterable of (i, j, cost)
         :return:
         """
-        self.tensor = t.zeros(size=(m, n))
+        self.tensor = t.zeros(size=(self.m, self.n))
         for (i, j, c) in ixs:
             if self.weighted:
                 self.tensor[i, j] = c

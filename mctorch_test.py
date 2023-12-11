@@ -10,10 +10,10 @@ from munkres import Munkres
 import matplotlib.pyplot as plt
 import networkx as nx
 # from networkx.algorithms import bipartite
-from adjacency import Adjacency
+from adjacency import BipartiteAdjacency
 
 n = 10
-nIter = 200
+nIter = 100
 
 # # cost matrix
 costsNumpy = np.abs(npr.randn(n,n) * 1e2)
@@ -37,8 +37,8 @@ for r, c in assignments:
     # print(f'row {r}, col {c}: {value}')
     totalCost += value
 print(f'Munkres: total cost = {totalCost}')
-adj0 = Adjacency()
-adj0.fromEdges(aEdges, n, n)
+adj0 = BipartiteAdjacency(n, n)
+adj0.fromEdges(aEdges)
 # print(f'adj0 : {type(adj0)}')
 
 # 1. Initialize Parameter
@@ -46,10 +46,11 @@ x = Parameter(manifold=DoublyStochastic(n,n))
 # print(f'types: x: {x.dtype}, c: {c.dtype}')
 # print(f'x: {x.shape}')
 
+# # 2. declare cost function
 def cost(xi:t.Tensor):
     """
     :param xi: doubly stochastic matrix. Close to optimality it should act as a permutation mtx
-    :return:
+    :return: cost :: R+
     """
     if xi.dim() == 3:
         return t.trace(t.einsum('ijk,jl->kl', xi, costs))  # Tr(X_i C)
@@ -61,7 +62,8 @@ def cost(xi:t.Tensor):
 # 3. Optimize
 optimizer = rSGD(params = [x], lr=1e-2)
 
-adj = Adjacency()
+adj = BipartiteAdjacency(n, n)
+adjPos = nx.spring_layout(adj.g)  # graph layout
 
 fig, ax = plt.subplots()
 cs = []  # costs
@@ -75,16 +77,16 @@ for epoch in range(nIter):
     # adjacency
     adj.fromTorch(x.detach().clone().data[0,:,:], kLargest=1)
     nxAdjGraph = adj.g
-    # drawing
-    plt.clf()
-    plt.title(f'Iter {epoch}')
-    nx.draw(nxAdjGraph, pos=nx.spring_layout(nxAdjGraph))
-    # plt.pause(1)
-    plt.show()
+    # # drawing
+    # plt.clf()
+    # plt.title(f'Iter {epoch}')
+    # nx.draw(nxAdjGraph, pos=adjPos)
+    # # plt.pause(1)
+    # plt.show()
 
 print(f'Cost #{epoch}: {fi.data}')
 # print(f'Final X: {x.data}')
 
 # fig, ax = plt.subplots()
-# ax.plot(list(range(nIter)), cs, linewidth=2.0)
-# plt.show()
+ax.plot(list(range(nIter)), cs, linewidth=2.0)
+plt.show()
