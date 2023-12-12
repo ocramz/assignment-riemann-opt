@@ -56,14 +56,14 @@ def cost(xi:t.Tensor):
     else:
         return t.trace(t.einsum('jk,jl->kl', xi, costs))  # Tr(X_i C)
 
-# print(f'cost of Munkres assignment: {cost(adj0.tensor)}, {adj0.tensor}')
+print(f'cost of Munkres assignment: {cost(adj0.tensor)}')
 
 # 3. Optimize
 optimizer = rSGD(params = [x], lr=1e-2)
 
 adj = Adjacency()
 
-fig, ax = plt.subplots()
+fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
 cs = []  # costs
 for epoch in range(nIter):
     fi = cost(x)
@@ -72,19 +72,20 @@ for epoch in range(nIter):
     fi.backward()
     optimizer.step()
     optimizer.zero_grad()
-    # adjacency
+    # # adjacency
     adj.fromTorch(x.detach().clone().data[0,:,:], kLargest=1)
     nxAdjGraph = adj.g
-    # drawing
-    plt.clf()
-    plt.title(f'Iter {epoch}')
-    nx.draw(nxAdjGraph, pos=nx.spring_layout(nxAdjGraph))
-    # plt.pause(1)
-    plt.show()
+    # # drawing
+    #
+    # plt.title(f'Iter {epoch}')
+    # nx.draw(nxAdjGraph, pos=nx.spring_layout(nxAdjGraph), ax=ax1)
+    # # plt.pause(1)
+    # plt.clf()
+
 
 print(f'Cost #{epoch}: {fi.data}')
 # print(f'Final X: {x.data}')
 
-# fig, ax = plt.subplots()
-# ax.plot(list(range(nIter)), cs, linewidth=2.0)
-# plt.show()
+ax2.plot(list(range(nIter)), cs, linewidth=2.0)
+plt.show()
+
