@@ -1,4 +1,4 @@
-from torch import Tensor, eye, ones, matmul, kron, exp, div, diag, reciprocal, norm, randn, abs
+from torch import Tensor, Size, eye, ones, matmul, kron, exp, div, diag, reciprocal, norm, randn, abs
 from torch.linalg import lstsq
 
 def randomNonNegTensor(m):
@@ -40,6 +40,9 @@ def sinkhorn(x0, verbose=False, maxiter: int = 100, tol=1e-3):
     return xHat
 
 class DoublyStochastic:
+    """Manifold of doubly-stochastic matrices
+    reimplemented from scratch, with references
+    interface loosely following that of mctorch but with more comments"""
     def __init__(self, m:int):
         """ n x n doubly stochastic matrices
         :param m: # rows
@@ -48,16 +51,21 @@ class DoublyStochastic:
         self.idm = eye(self.m)  # Identity(m)
         self.onesm = ones([self.m])  # vector of ones
 
+        self._size = Size((self.m, self.m))
+
+    def size(self):
+        return self._size
+
     def rand(self):
         """
         sample a random point on the manifold
-        :return:
+        :return: a random point on the manifold
         """
         x = randomNonNegTensor(self.m)
         return sinkhorn(x)
 
-    def orthogonalProj(self, x, z):
-        """
+    def proj(self, x, z):
+        """ orthogonal projection on the tangent
         Eqn. B.11 of https://arxiv.org/pdf/1802.02628.pdf
         :param x: point on the manifold at which the tangent is computed
         :param z: point to be projected
@@ -67,21 +75,31 @@ class DoublyStochastic:
         # torch.linalg.lstsq(A, b).solution == A.pinv() @ b
 
         # # Eqn B.9
-        alpha = lstsq(self.idm - x @ x.t, z - (x @ z.t) @ self.onesm).solution
+        alpha = lstsq(self.idm - x @ x.mT, (z - (x @ z.mT)) @ self.onesm).solution
         # # Eqn B.10
-        beta = z.t @ self.onesm - x.t @ alpha
+        beta = z.mT @ self.onesm - x.mT @ alpha
 
-        return z - kron(alpha @ self.onesm.t + self.onesm @ beta.t, x)
+        return z - kron(alpha @ self.onesm + self.onesm @ beta, x)
 
 
-    def retraction(self, x, v):
-        """
+    def retr(self, x, v):
+        """ Retraction on the manifold
         Eqn 34 of https://arxiv.org/pdf/1802.02628.pdf
         :param x: point on the manifold at which the tangent is computed
         :param v: point to be retracted on the manifold (written "xi" in the paper)
         :return: point on the manifold
         """
-        return self.sinkhorn(x * exp(div(v, x)))
+        return sinkhorn(x * exp(div(v, x)))
+
+    def egrad2rgrad(self, x, u):
+        """
+        Euclidean gradient to Riemann gradient
+        :param x: point on the manifold
+        :param u: gradient vector (?)
+        :return: projected gradient
+        """
+        mu = x * u  # TODO I don't understand why we multiply here
+        return self.proj(x, mu)
 
 
 

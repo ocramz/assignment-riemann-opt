@@ -1,5 +1,6 @@
 import torch as t
-from mctorch.manifolds import DoublyStochastic
+# from mctorch.manifolds import DoublyStochastic
+from doublystochastic import DoublyStochastic
 from mctorch.parameter import Parameter
 from mctorch.optim import rSGD, rAdagrad
 import numpy as np
@@ -13,7 +14,7 @@ import networkx as nx
 from adjacency import BipartiteAdjacency
 
 n = 5
-nIter = 300
+nIter = 100
 
 # # cost matrix
 costsNumpy = np.abs(npr.randn(n,n) * 1e2)
@@ -36,7 +37,7 @@ adj0.fromEdges(aEdges)
 # print(f'adj0 : {type(adj0)}')
 
 # 1. Initialize Parameter
-x = Parameter(manifold=DoublyStochastic(n,n))
+x = Parameter(manifold=DoublyStochastic(n))
 # print(f'types: x: {x.dtype}, c: {c.dtype}')
 # print(f'x: {x.shape}')
 
@@ -87,7 +88,7 @@ for epoch in range(nIter):
     fi = cost(x)
     y = fi.detach().clone().data.item()  # cost
     cs.append(y)
-    xCurr = x.detach().clone().data[0,:,:]  # current iteration
+    xCurr = x.detach().clone().data  # current iteration
     rmean, cmean, mi, ma = rowColMeans(xCurr)  # row and column mean
     di = distanceToOptAssign(xCurr)  # distance to optimal soln
     ds.append(di)

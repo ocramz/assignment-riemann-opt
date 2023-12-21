@@ -16,6 +16,8 @@ class Parameter(torch.nn.Parameter):
         self._manifold = manifold
         self._rgrad = None
         if manifold is not None:
+            # print(f'Parameter.size(): {self.size()}')
+            # print(f'Manifold.size(): {manifold.size()}')
             assert manifold.size() == self.size()
             self.register_rgrad_hook()
 
