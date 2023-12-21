@@ -12,7 +12,12 @@ from networkx.algorithms import bipartite
 # # B.add_edges_from([(1, "a"), (1, "b"), (2, "b"), (2, "c"), (3, "c"), (4, "a")])
 
 def argSort(xs):
-    return sorted(list(enumerate(xs)), key=lambda x:x[1])
+    """
+    return a sorted list of elements together with their original indices
+    :param xs:
+    :return:
+    """
+    return sorted(list(enumerate(xs)), key=lambda x:x[1], reverse=True)
 
 class BipartiteAdjacency:
     def __init__(self, m:int, n:int, weighted):
@@ -57,11 +62,12 @@ class BipartiteAdjacency:
         :param ixs: iterable of (i, j, cost)
         :return:
         """
+        self.g.remove_edges_from(self.g.edges())
         self.tensor = t.zeros(size=(self.m, self.n))
         for (i, j, c) in ixs:
             if self.weighted:
                 self.tensor[i, j] = c
-                self.g.add_edge(i, j, weight=c)
+                self.add_edge(i, j, c)
             else:
                 self.tensor[i, j] = 1
-                self.g.add_edge(i, j)
+                self.add_edge(i, j, 1)
