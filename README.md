@@ -5,6 +5,7 @@
 <figcaption>A sample run. In d=10, the Birkhoff polytope has 3628800 corners so it's likely SGD got stuck in a local minimum</figcaption>
 </figure>
 
+-----
 
 Instead of a scipy one-liner ( [linear sum assignment](#assign) ), we take the panoramic route and formulate it as an optimization
 problem over the manifold of doubly-stochastic matrices, hoping to end up in a corner of the [Birkhoff polytope](#birkhoff).
