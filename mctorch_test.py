@@ -9,6 +9,9 @@ import numpy.random as npr
 from munkres import Munkres
 
 import logging
+import imageio
+import os.path
+from datetime import datetime
 
 import matplotlib.pyplot as plt
 # import matplotlib.animation as plt_ani
@@ -22,7 +25,7 @@ tol = 1e-3  # early stopping tolerance
 learnRate = 2 * 1e-2
 wStdev = 1e1  # weight std dev
 adjKLargest = 3  # how many edges with largest weight to reconstruct
-save_pngs = True
+make_gif = True
 png_dpi = 120
 
 # # cost matrix
@@ -151,7 +154,7 @@ for epoch in range(nIter):
 
     for spine in plt.gca().spines.values():
         spine.set_visible(False)
-    if save_pngs:
+    if make_gif:
         plt.savefig(fname=f'ani/frame_{epoch}.png',
                     format='png',
                     dpi=png_dpi)
@@ -179,3 +182,17 @@ except ValueError:
     print(f'cannot plot: {len(iters)} != {len(ds)}')
 
 
+if make_gif:
+    N = 500
+    images = []
+    # for filename in glob.glob('ani/frame_*.png'):
+    #     images.append(imageio.imread(filename))
+    for i in range(N):
+        fname = f'ani/frame_{i}.png'
+        if os.path.isfile(fname):
+            images.append(imageio.imread(fname))
+        else:
+            break
+
+    unix_timestamp = round((datetime.now() - datetime(1970, 1, 1)).total_seconds())
+    imageio.mimsave(f'ani/out/movie_{unix_timestamp}.gif', images, fps=30, loop=0)

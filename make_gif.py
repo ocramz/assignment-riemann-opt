@@ -1,5 +1,4 @@
 import imageio
-import glob
 import os.path
 from datetime import datetime
 
