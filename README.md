@@ -2,7 +2,7 @@
 
 <figure>
 <img src="movie_10x10_s.gif" />
-<figcaption>A sample run. In d=10, the Birkhoff polytope has 3628800 corners so it's likely SGD got stuck in a local minimum</figcaption>
+<figcaption>A sample run, with cost lower bound (LB) given by the combinatorial (Munkres) solution and corresponding solution in dashed red line. In d=10, the Birkhoff polytope has 3628800 corners so it's likely SGD got stuck in a local minimum.</figcaption>
 </figure>
 
 -----
