@@ -17,10 +17,13 @@ import matplotlib.pyplot as plt
 # import matplotlib.animation as plt_ani
 import networkx as nx
 # from networkx.algorithms import bipartite
+
+from tqdm import tqdm
+
 from adjacency import BipartiteAdjacency
 
 n = 10
-nIter = 400
+nIter = 1000
 tol = 1e-3  # early stopping tolerance
 learnRate = 2 * 1e-2
 wStdev = 1e1  # weight std dev
@@ -42,7 +45,7 @@ x = Parameter(manifold=DoublyStochastic(n))
 
 # Optimizer
 optimizer = rSGD(params = [x], lr=learnRate)
-# optimizer = rAdagrad(params = [x], lr=learnRate)
+# optimizer = rAdagrad(params = [x], lr = learnRate)
 
 # # reference assignment with munkres
 assignments = Munkres().compute(costsNumpy.copy())  # NB use copy() since Munkres mutates input vector
@@ -58,6 +61,8 @@ adj0 = BipartiteAdjacency(n, n, weighted=False)
 adj0.fromEdges(aEdges)
 # print(f'adj0 : {type(adj0)}')
 
+# # parameter string
+params = f"iter-{nIter}_n-{n}_lr-{learnRate}"
 
 
 # # 2. declare cost function
@@ -103,14 +108,17 @@ def scaleEdgeWidth(w):
 
 cs = []  # costs
 ds = []
-for epoch in range(nIter):
+for epoch in (pb := tqdm(range(nIter)) ):
     fi = cost(x)
     y = fi.clone().detach().data.item()  # cost at current iteration
+    
     cs.append(y)
     xCurr = x.clone().detach().data  # current iteration
 
     rmean, cmean, mi, ma = rowColMeans(xCurr)  # row and column mean
     di = distanceToOptAssign(xCurr)  # distance to optimal soln
+    # pb.write()
+    pb.set_description_str(f"distance to opt: {di:.2f}")
     ds.append(di)
     if t.any(t.isnan(xCurr)):
         errmsg = f'iter {epoch}: NaN'
@@ -152,9 +160,10 @@ for epoch in range(nIter):
                            style='-'
                            )
 
-    for spine in plt.gca().spines.values():
-        spine.set_visible(False)
+
     if make_gif:
+        for spine in plt.gca().spines.values():
+            spine.set_visible(False)
         plt.savefig(fname=f'ani/frame_{epoch}.png',
                     format='png',
                     dpi=png_dpi)
@@ -170,6 +179,7 @@ print(f'Cost #{epoch}: {fi.data}')
 print(f'Distance to optimality #{epoch}: {di}')
 # print(f'Final X: {x.data}')
 
+unix_timestamp = round((datetime.now() - datetime(1970, 1, 1)).total_seconds())
 
 
 try:
@@ -177,22 +187,30 @@ try:
     fig, ax = plt.subplots()
     iters = list(range(epoch + 1))
     ax.plot(iters, ds, linewidth=2.0)
+    
+    if make_gif:
+        plt.xlabel("iterations")
+        plt.ylabel("optimality gap")
+        plt.savefig(fname=f'ani/out/opt_gap_{params}_{unix_timestamp}.png',
+                format='png',
+                dpi=png_dpi)
     plt.show()
 except ValueError:
     print(f'cannot plot: {len(iters)} != {len(ds)}')
 
 
 if make_gif:
-    N = 500
+    N = nIter
     images = []
     # for filename in glob.glob('ani/frame_*.png'):
     #     images.append(imageio.imread(filename))
     for i in range(N):
-        fname = f'ani/frame_{i}.png'
-        if os.path.isfile(fname):
-            images.append(imageio.imread(fname))
-        else:
-            break
+        if i % 10 == 0:
+            fname = f'ani/frame_{i}.png'
+            if os.path.isfile(fname):
+                images.append(imageio.imread(fname))
+            else:
+                break
 
-    unix_timestamp = round((datetime.now() - datetime(1970, 1, 1)).total_seconds())
-    imageio.mimsave(f'ani/out/movie_{unix_timestamp}.gif', images, fps=30, loop=0)
+    
+    imageio.mimsave(f'ani/out/movie_{params}_{unix_timestamp}.gif', images, fps=30, loop=0)

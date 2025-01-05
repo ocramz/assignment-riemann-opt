@@ -94,11 +94,12 @@ class DoublyStochastic:
     def egrad2rgrad(self, x, u):
         """
         Euclidean gradient to Riemann gradient
+        Lemma 1 of https://arxiv.org/pdf/1802.02628.pdf (p.6)
         :param x: point on the manifold
-        :param u: gradient vector (?)
+        :param u: Euclidean gradient vector
         :return: projected gradient
         """
-        mu = x * u  # TODO I don't understand why we multiply here
+        mu = x * u  # elementwise product
         return self.proj(x, mu)
 
 

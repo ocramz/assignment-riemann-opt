@@ -1,0 +1,4 @@
+munkres==1.1.4
+numpy==1.24.4
+torch==2.1.1
+tqdm==4.67.1
