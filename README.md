@@ -12,6 +12,8 @@ problem over the manifold of doubly-stochastic matrices, hoping to end up in a c
 
 ~~If it works I'll write a blog post about it~~ UPDATE: it works
 
+UPDATE: blog post: https://ocramz.github.io/posts/2023-12-21-assignment-riemann-opt.html
+
 
 ### References
 
