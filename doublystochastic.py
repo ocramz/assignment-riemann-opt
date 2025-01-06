@@ -71,15 +71,17 @@ class DoublyStochastic:
         :param z: point to be projected
         :return: point on the tangent
         """
-        # # solve A x = b in the least squares sense
-        # torch.linalg.lstsq(A, b).solution == A.pinv() @ b
-
         # # Eqn B.9
-        alpha = lstsq(self.idm - x @ x.mT, (z - (x @ z.mT)) @ self.onesm).solution
+        a = (self.idm - x @ x.mT)
+        b = (z - (x @ z.mT)) @ self.onesm
+        alpha = a.mT @ b
+        # alpha = lstsq(self.idm - x @ x.mT, (z - (x @ z.mT)) @ self.onesm).solution
         # # Eqn B.10
         beta = z.mT @ self.onesm - x.mT @ alpha
 
-        return z - kron(alpha @ self.onesm + self.onesm @ beta, x)
+        prj = z - (alpha @ self.onesm + self.onesm @ beta) * x
+
+        return prj
 
 
     def retr(self, x, v):

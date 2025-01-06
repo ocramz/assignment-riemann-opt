@@ -28,7 +28,7 @@ tol = 1e-3  # early stopping tolerance
 learnRate = 2 * 1e-2
 wStdev = 1e1  # weight std dev
 adjKLargest = 3  # how many edges with largest weight to reconstruct
-make_gif = True
+make_gif = False
 png_dpi = 120
 
 # # cost matrix
